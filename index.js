@@ -154,7 +154,7 @@ try {
 	client.channels.cache.get(`${logschannel}`).send(`sent invite link of this server (Message sender - ${message.author.tag} ID: ${message.author.id}) in <#${message.channel.id}>\n${invite}`)
 } catch (error) {
 	console.log(error);
-	message.channel.send(`Please contact your server's owner to enable me to send messages in\n<#${logschannel}>`);
+	message.channel.send(`Please contact your server's owner to enable me to send messages in\n${logschnnl}\nOr make a new logs channel!`);
 }
 	}
 	if(command === 'lockdown') {
@@ -188,7 +188,7 @@ try {
 				await db.set(`lockdown_${message.guild.id}`, 'false')
 
 			} catch (error) {
-				message.channel.send(`${stope}	Please enable my permissions!`)
+				message.channel.send(`${stope} Please create a LOGS CHANNEL to send the logs!\n${stope}	Please enable my permissions!`)
 			}
 		}
 		}

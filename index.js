@@ -3,6 +3,9 @@ const app = express()
 const Database = require('@replit/database')
 const db = new Database()
 const ms = require('pretty-ms')
+const { registerFont } = require('canvas')
+const Canvas = require('canvas')
+registerFont('./NotoSans-Regular.ttf', { family: 'noto-sans' });
 app.get('/', (req, res) => {
 	res.send('fbc')
 })
@@ -28,6 +31,17 @@ client.on('inviteCreate', async (invite) => {
 	}
 	}
 })
+const applyText = (canvas, text) => {
+	const context = canvas.getContext('2d');
+	let fontSize = 70;
+
+	do {
+		context.font = `${fontSize -= 10}px noto-sans`;
+	} while (context.measureText(text).width > canvas.width - 300);
+
+	return context.font;
+};
+
 client.on('guildMemberAdd', async (member) => {
 	const lockdown = await db.get(`lockdown_${member.guild.id}`)
 	const logschannel = await db.get(`logschannel_${member.guild.id}`)
@@ -48,6 +62,30 @@ client.on('guildMemberAdd', async (member) => {
 	} catch (error) {
 		console.log(error);
 	}
+	} else
+	if(lockdown === 'false' || lockdown === null && welcomechannel !== null) {
+		const chnnl = await db.get(`welcomechannel_${member.guild.id}`)
+		const channel = member.guild.channels.cache.get(`${chnnl}`)
+		const canvas = Canvas.createCanvas(700, 250);
+	const context = canvas.getContext('2d');
+	const background = await Canvas.loadImage('./wallpaper.jpg');
+	context.drawImage(background, 0, 0, canvas.width, canvas.height);
+	context.strokeStyle = '#74037b';
+	context.strokeRect(0, 0, canvas.width, canvas.height);
+	context.font = '28px noto-sans';
+	context.fillStyle = '#ffffff';
+	context.fillText('Welcome to the server,', canvas.width / 2.5, canvas.height / 3.5);
+	context.font = applyText(canvas, `${member.displayName}!`);
+	context.fillStyle = '#ffffff';
+	context.fillText(`${member.displayName}!`, canvas.width / 2.5, canvas.height / 1.8);
+	context.beginPath();
+	context.arc(125, 125, 100, 0, Math.PI * 2, true);
+	context.closePath();
+	context.clip();
+	const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'jpg' }));
+	context.drawImage(avatar, 25, 25, 200, 200);
+	const attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'welcome-image.png');
+	channel.send(`Welcome to the server, ${member}!`, attachment);
 	}
 })
 client.on('message', async message => {
@@ -97,9 +135,6 @@ client.on('message', async message => {
 const filter = (m) => {
 	if(message.author.bot) return;
 	if(m.content.includes('y')) return true;
-	else {
-		m.channel.send('👍 Operation canceled.')
-	}
 }
 message.channel.send('⚠ Are you sure about to change the prefix?\n(y/n) answer in 13 seconds.').then(() => {
 	message.channel.awaitMessages(filter, { max: 1, time: 13000, errors: ['time'] })

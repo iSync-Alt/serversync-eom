@@ -11,10 +11,27 @@ app.listen(3000, () => {
 })
 let Discord = require('discord.js')
 let client = new Discord.Client()
+client.on('inviteCreate', async (invite) => {
+	const lockdown = await db.get(`lockdown_${invite.guild.id}`)
+	const logschannel = await db.get(`logschannel_${invite.guild.id}`)
+	if(logschannel === null) logschannel = 'NONE';
+	if(lockdown === 'true' && lockdown !== null) {
+		try {
+			invite.delete('The server is in **LOCKDOWN MODE**!')
+		 try {
+			client.channels.cache.get(`${logschannel}`).send(`Invite was deleted! beacause **LOCKDOWN MODE** in enabled!\nCode: ${invite.code}\nChannel: ${invite.channel}\nCreatedTimestamp: ${invite.createdTimestamp}\nInviter: ${invite.user}`);
+		} catch (error) {
+			console.log(error)
+		}
+	} catch (error) {
+		console.log(error);
+	}
+	}
+})
 client.on('guildMemberAdd', async (member) => {
 	const lockdown = await db.get(`lockdown_${member.guild.id}`)
 	const logschannel = await db.get(`logschannel_${member.guild.id}`)
-	if(logschannel === null) logschannel === 'NONE'
+	if(logschannel === null) logschannel = 'NONE'
 	if(lockdown === 'true' && lockdown !== null) {
 		try {
 		member.kick('The server is in **LOCKDOWN MODE**!')
@@ -56,7 +73,7 @@ client.on('message', async message => {
 	const stope = '<:STOP:867715684079632404>'
 	const setting2 = '<:gears:867722775502651432>'
 	if(!message.content.startsWith(prefix) || message.author.bot) return false;
-	const args = message.content.slice(prefix.length).trim().split(/ +/g);
+	const args = message.content.slice(prefix.length).trim().split(/ +/);
 	const command = args.shift().toLowerCase()
 	if(command === 'config' || command === 'setting' || command === 'settings') {
 		if(!message.guild) return false;
@@ -160,7 +177,7 @@ try {
 	if(command === 'lockdown') {
 		if(!message.guild) return false;
 		let lockdownsetting = await db.get(`lockdown_${message.guild.id}`);
-		if(!message.member.hasPermission("MANAGE_SERVER")) return message.channel.send(`${stope} You don't have the needed permission to use this command! \n\`/MANAGE_SEERVER/\`!\nIf you think tha t this is a mistake, please contact your server's owner!`);
+		if(!message.member.hasPermission("MANAGE_SERVER")) return message.channel.send(`${stope} You don't have the needed permission to use this command! \n\`/MANAGE_SERVER/\`!\nIf you think that this is a mistake, please contact your server's owner!`);
 		let setting = args.join(' ')
 		if((!setting || setting === 'true') && (lockdownsetting === null || lockdownsetting === 'false')) {
 		try {
@@ -191,6 +208,33 @@ try {
 				message.channel.send(`${stope} Please create a LOGS CHANNEL to send the logs!\n${stope}	Please enable my permissions!`)
 			}
 		}
+		}
+		if(command === 'changewelcome') {
+			if(!message.guild) return;
+			const newWelcome = message.mentions.channels.first().id
+			if(!message.member.hasPermission('MANAGE_SERVER')) {
+				message.channel.send(`${stope} You don't have the permission \`/MANAGE_SERVER/\`!\nIf you think that this is a mistake, please contact your server's owner!`)
+			} else
+			if(!newWelcome) {
+				message.channel.send(`${stope} You didn't provided the correct arguements to execute this command!\nFor example, to make a channel named '#welcome' to be the new channel, do this\n\`${prefix}changewelcome #welcome\`\nUsage: \`${prefix}changewelcome [CHANNEL MENTIONS]\`!`)
+			} else
+			if(newWelcome === welcomechannel) {
+				message.channel.send(`${stope} both <#${newWelcome}> and, <#${welcomechannel}> are the same!`)
+			} else {
+				try {
+					message.channel.send(`${righte} Done!\n\nChanged welcome channel, \n\n${welcomechannel} to, ${newWelcome}!\n${stope} Errors\nNone!`)
+					await db.set(`welcomechannel_${message.guild.id}`, newWelcome)
+					try {
+						client.channels.cache.get(`${newWelcome}`).send('TEST')
+						await message.delete()
+					} catch (error) {
+						message.channel.send(`Couldn't send messages in <#${newWelcome}>!\nPlease change that for me, to send messages there!`);
+						console.log(error);
+					}
+				} catch (error) {
+					console.log(error);
+				}
+			}
 		}
 })
 client.login(process.env.token)

@@ -8,6 +8,7 @@ const Canvas = require('canvas')
 registerFont('./NotoSans-Regular.ttf', { family: 'noto-sans' });
 app.get('/', (req, res) => {
 	res.send('fbc')
+	console.log('fbc')
 })
 app.listen(3000, () => {
 	console.log('Project is ready!')
@@ -66,6 +67,7 @@ client.on('guildMemberAdd', async (member) => {
 	if(lockdown === 'false' || lockdown === null && welcomechannel !== null) {
 		const chnnl = await db.get(`welcomechannel_${member.guild.id}`)
 		const channel = member.guild.channels.cache.get(`${chnnl}`)
+		try {
 		const canvas = Canvas.createCanvas(700, 250);
 	const context = canvas.getContext('2d');
 	const background = await Canvas.loadImage('./wallpaper.jpg');
@@ -86,6 +88,9 @@ client.on('guildMemberAdd', async (member) => {
 	context.drawImage(avatar, 25, 25, 200, 200);
 	const attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'welcome-image.png');
 	channel.send(`Welcome to the server, ${member}!`, attachment);
+		} catch (error) {
+			console.log(error);
+		}
 	}
 })
 client.on('message', async message => {
@@ -111,6 +116,11 @@ client.on('message', async message => {
 	const stope = '<:STOP:867715684079632404>'
 	const setting2 = '<:gears:867722775502651432>'
 	if(!message.content.startsWith(prefix) || message.author.bot) return false;
+	if (!message.channel.permissionsFor(client.user).has('SEND_MESSAGES')) return;
+	const botPerms = ['MANAGE_MESSAGES', 'KICK_MEMBERS', 'BAN_MEMBERS', 'MANAGE_ROLES', 'MANAGE_CHANNELS', 'MANAGE_SERVER', 'ADMINISTRATOR',];
+	if (!message.guild.me.permissions.has(botPerms)) {
+		return message.reply(`I need the permissions ${botPerms.join(', ')} for this applicaton to work properly`);
+	}
 	const args = message.content.slice(prefix.length).trim().split(/ +/);
 	const command = args.shift().toLowerCase()
 	if(command === 'config' || command === 'setting' || command === 'settings') {
@@ -266,9 +276,72 @@ try {
 						message.channel.send(`Couldn't send messages in <#${newWelcome}>!\nPlease change that for me, to send messages there!`);
 						console.log(error);
 					}
+					try {
+						client.channels.cache.get(`${logschannel}`).send(`${righte} Updated welcome channel!\n${welcomechnnl} to, <#${newWlecome}>`)
+					} catch (error) {
+						console.log(error)
+					}
 				} catch (error) {
 					console.log(error);
 				}
+			}
+		}
+		if(command === 'changemessage') {
+			const messag = args[0]
+			if(!message.memeber.hasPermission('MANAGE_SERVER')) {
+				try {
+				message.channel.send(`${stope} You don't have the permission \`/MANAGE_SERVER/\`\nIf you think that this is a mistake, please conatct your server's owner!`)
+				} catch (error) {
+					console.log(error);
+				}
+			} else
+			if(!messag) {
+				try {
+					message.channel.send(`${stope} You didn't provide any arguemnets, that is needed to execute this command!\nFor example if you want it to say \`Welcome to the server, [MEMBER]!\`\n\`${prefix}changemessage Welcome to the server\`\nArguements \`${prefix}changemessage [MESSAGE] (WITHOUT THE MEMBER)\`!`)
+				} catch (error) {
+					console.log(error);
+				}
+			} else
+			if(welcomemessage === messag) {
+				try {
+					message.channel.send(`${stope} aren't they the same?\n\`${welcomemessage}\` and, \`${messag}\`!`)
+				} catch (error) {
+					console.log(error);
+				}
+			} else {
+				try {
+				message.channel.send(`${righte} successfully updated welcome message!\n\`${welcomemessage}\` to, \`${messag}\`!`)
+				await db.set(`welcomemessage_${message.guild.id}`, messag)
+				try {
+					client.channels.cache.get(`${logschannel}`).send(`${righte} Updated welcome message\n\`${wlecommessage}\` to, ${messag}!`)
+				} catch (error) {
+					console.log(error)
+				}
+			} catch (error) {
+				console.log(error);
+			}
+		}
+		}
+		if(command === 'heartbeat') {
+			try {
+				client.channels.cache.get(`${logschannel}`).send('TEST')
+				.then((sentMessage) => {
+					setTimeout(() => sentMessage.delete(), 10000)
+				})
+				message.channel.send(`No errors!`)
+			} catch (error) {
+				console.log(error);
+				message.channel.send(`I can't send messages to ${logschnnl}, please enable my permission to sent messages there!`);
+			}
+			try {
+				client.channels.cache.get(`${welcomechannel}`).send('TEST')
+				.then((sentMessage) => {
+					setTimeout(() => sentMessage.delete(), 10000)
+				})
+				message.channel.send(`No errors!`)
+			} catch (error) {
+				console.log(error);
+				message.channel.send(`I can't sent messages to ${welcomechnnl}, please enable my permission to send messages there!`);
 			}
 		}
 })
